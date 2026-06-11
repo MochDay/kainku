@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Manajemen & Inventaris Bahan Kain</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Header / Navigation -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white text-indigo-600 p-2 rounded-lg shadow-inner">
+                    <i data-lucide="scissors" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">KainKu</h1>
+                    <p class="text-xs text-indigo-200">Manajemen & Kalkulator Inventaris Kain</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button id="btnTambah" class="bg-white text-indigo-600 hover:bg-indigo-50 font-semibold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2 text-sm w-full sm:w-auto justify-center">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    Tambah Kain Baru
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Panel Ringkasan / Dashboard Mini -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Item Kain</p>
+                    <h3 id="statTotalItem" class="text-2xl font-bold text-slate-800">0</h3>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <i data-lucide="ruler" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Stok (Meter)</p>
+                    <h3 id="statTotalStok" class="text-2xl font-bold text-slate-800">0 m</h3>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <i data-lucide="calculator" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Estimasi Nilai</p>
+                    <h3 id="statTotalNilai" class="text-2xl font-bold text-slate-800">Rp 0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Bar -->
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="relative w-full md:w-96">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </span>
+                <input type="text" id="inputCari" placeholder="Cari nama kain, jenis, warna..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+            </div>
+            <div class="flex gap-2 w-full md:w-auto">
+                <select id="filterJenis" class="w-full md:w-48 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white">
+                    <option value="">Semua Jenis</option>
+                    <option value="Katun">Katun</option>
+                    <option value="Sutra">Sutra</option>
+                    <option value="Linen">Linen</option>
+                    <option value="Wol">Wol</option>
+                    <option value="Polyester">Polyester</option>
+                    <option value="Rayon">Rayon</option>
+                    <option value="Denim">Denim</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+                <select id="urutkan" class="w-full md:w-48 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white">
+                    <option value="terbaru">Terbaru Diinput</option>
+                    <option value="stok-terbanyak">Stok Terbanyak</option>
+                    <option value="stok-tersedikit">Stok Tersedikit</option>
+                    <option value="nilai-tertinggi">Nilai Tertinggi</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Daftar Kain Grid -->
+        <section id="daftarKain" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Data kain akan dimuat secara dinamis disini -->
+        </section>
+
+        <!-- State Kosong -->
+        <section id="stateKosong" class="hidden flex-col items-center justify-center py-20 text-center">
+            <div class="bg-indigo-50 p-4 rounded-full text-indigo-500 mb-4">
+                <i data-lucide="folder-open" class="w-12 h-12"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700">Belum ada data kain</h3>
+            <p class="text-slate-500 text-sm max-w-sm mt-1">Tambahkan kain pertama Anda untuk mulai mengelola stok dan melakukan kalkulasi nilai kain.</p>
+            <button onclick="bukaModalTambah()" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow hover:bg-indigo-700 transition">
+                Tambah Kain Sekarang
+            </button>
+        </section>
+    </main>
+
+    <!-- Modal Form (Tambah / Edit) -->
+    <div id="modalForm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+                <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Tambah Data Kain</h2>
+                <button id="btnTutupModal" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <form id="formKain" class="p-6 space-y-6">
+                <input type="hidden" id="editIndex" value="">
+
+                <!-- Bagian Foto (Kamera / Unggah) -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Foto Kain</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Area Kamera / Pratinjau -->
+                        <div class="relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 overflow-hidden h-48 flex flex-col items-center justify-center">
+                            <!-- Video Stream (Sembunyikan saat tidak aktif) -->
+                            <video id="videoStream" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+                            
+                            <!-- Pratinjau Foto -->
+                            <img id="fotoPratinjau" class="hidden absolute inset-0 w-full h-full object-cover" src="">
+
+                            <!-- UI Default / Kosong -->
+                            <div id="placeholderFoto" class="flex flex-col items-center justify-center text-center p-4">
+                                <i data-lucide="image" class="w-10 h-10 text-slate-400 mb-2"></i>
+                                <p class="text-xs text-slate-500">Belum ada foto terpilih</p>
+                            </div>
+
+                            <!-- Indikator Menggunakan Kamera -->
+                            <span id="labelKameraAktif" class="hidden absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">Kamera Aktif</span>
+                        </div>
+
+                        <!-- Kontrol Kamera & File -->
+                        <div class="flex flex-col justify-center gap-3">
+                            <button type="button" id="btnAmbilFoto" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 py-2 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                                <span id="textAmbilFoto">Buka Kamera (Cekrek)</span>
+                            </button>
+                            <button type="button" id="btnJepret" class="hidden bg-emerald-600 text-white hover:bg-emerald-700 py-2 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="aperture" class="w-4 h-4"></i>
+                                Jepret Foto!
+                            </button>
+                            
+                            <div class="text-center text-xs text-slate-400 font-semibold uppercase tracking-wider my-1">Atau</div>
+                            
+                            <label class="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 py-2 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 cursor-pointer transition">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                Unggah dari Galeri
+                                <input type="file" id="inputFotoFile" accept="image/*" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informasi Dasar -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="namaKain" class="block text-sm font-semibold text-slate-700 mb-1">Nama Kain <span class="text-red-500">*</span></label>
+                        <input type="text" id="namaKain" required placeholder="Contoh: Katun Toyobo Premium" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label for="jenisKain" class="block text-sm font-semibold text-slate-700 mb-1">Jenis Kain <span class="text-red-500">*</span></label>
+                        <select id="jenisKain" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white">
+                            <option value="">Pilih Jenis</option>
+                            <option value="Katun">Katun</option>
+                            <option value="Sutra">Sutra</option>
+                            <option value="Linen">Linen</option>
+                            <option value="Wol">Wol</option>
+                            <option value="Polyester">Polyester</option>
+                            <option value="Rayon">Rayon</option>
+                            <option value="Denim">Denim</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Warna & Spesifikasi Fisik -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Warna Kain</label>
+                        <div class="flex gap-2">
+                            <input type="color" id="warnaKain" value="#4f46e5" class="w-10 h-9 p-0.5 border border-slate-200 rounded-lg cursor-pointer bg-white">
+                            <input type="text" id="namaWarna" placeholder="Nama warna" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="lebarKain" class="block text-sm font-semibold text-slate-700 mb-1">Lebar Kain (cm)</label>
+                        <input type="number" id="lebarKain" placeholder="Contoh: 150" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label for="gramasiKain" class="block text-sm font-semibold text-slate-700 mb-1">Gramasi (GSM)</label>
+                        <input type="number" id="gramasiKain" placeholder="Contoh: 120" class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Stok & Harga (Untuk Kalkulator) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div>
+                        <label for="stokKain" class="block text-sm font-semibold text-slate-700 mb-1">Jumlah Stok (Meter) <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="stokKain" required placeholder="0.00" class="w-full pl-3 pr-12 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 text-xs font-semibold">Meter</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="hargaKain" class="block text-sm font-semibold text-slate-700 mb-1">Harga per Meter (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">Rp</span>
+                            <input type="number" id="hargaKain" placeholder="0" class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        </div>
+                    </div>
+                    <div class="sm:col-span-2 flex justify-between items-center border-t border-slate-200/60 pt-3 mt-1">
+                        <span class="text-xs text-slate-500 font-semibold">Estimasi Total Nilai Stok:</span>
+                        <span id="estimasiNilaiForm" class="text-sm font-bold text-indigo-600">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Deskripsi / Catatan Tambahan -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catatan Tambahan / Spesifikasi Lain</label>
+                    <textarea id="catatanKain" rows="2" placeholder="Contoh: Karakteristik kain jatuh, sedikit licin, cocok untuk bahan kemeja..." class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"></textarea>
+                </div>
+
+                <!-- Tombol Submit -->
+                <div class="flex gap-3 justify-end pt-4 border-t border-slate-100 sticky bottom-0 bg-white">
+                    <button type="button" id="btnBatal" class="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold text-sm transition">Batal</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold text-sm shadow-md transition flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Simpan Kain
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Custom (Pengganti Alert) -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 z-50">
+        <div id="toastIcon" class="text-emerald-400"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+        <p id="toastMessage" class="text-sm font-medium"></p>
+    </div>
+
+    <script>
+        // Data Global / In-Memory State
+        let dataKain = [];
+        let indexKainDiedit = -1;
+        
+        // Media Stream Kamera
+        let localStream = null;
+
+        // Inisialisasi Data Default jika kosong untuk Demo Estetik
+        const DATA_DEFAULT = [
+            {
+                nama: "Katun Toyobo Royal Blue",
+                jenis: "Katun",
+                warna: "#1e3a8a",
+                namaWarna: "Navy Royal",
+                lebar: 150,
+                gramasi: 130,
+                stok: 12.5,
+                harga: 32000,
+                catatan: "Serat rapat, tidak menerawang, sangat adem. Cocok untuk gamis dan kemeja.",
+                foto: "" // Menggunakan placeholder SVG atau warna
+            },
+            {
+                nama: "Linen Pure Sage Green",
+                jenis: "Linen",
+                warna: "#8fbc8f",
+                namaWarna: "Sage Green",
+                lebar: 140,
+                gramasi: 160,
+                stok: 5.0,
+                harga: 45000,
+                catatan: "Tekstur crinkle khas linen, tebal dan elegan.",
+                foto: ""
+            }
+        ];
+
+        // Referensi Elemen DOM
+        const modalForm = document.getElementById('modalForm');
+        const formKain = document.getElementById('formKain');
+        const listKainEl = document.getElementById('daftarKain');
+        const stateKosong = document.getElementById('stateKosong');
+        
+        // Kamera & Foto DOM
+        const videoStream = document.getElementById('videoStream');
+        const fotoPratinjau = document.getElementById('fotoPratinjau');
+        const placeholderFoto = document.getElementById('placeholderFoto');
+        const labelKameraAktif = document.getElementById('labelKameraAktif');
+        const btnAmbilFoto = document.getElementById('btnAmbilFoto');
+        const btnJepret = document.getElementById('btnJepret');
+        const textAmbilFoto = document.getElementById('textAmbilFoto');
+        const inputFotoFile = document.getElementById('inputFotoFile');
+
+        // Form inputs
+        const inputEditIndex = document.getElementById('editIndex');
+        const inputNama = document.getElementById('namaKain');
+        const inputJenis = document.getElementById('jenisKain');
+        const inputWarna = document.getElementById('warnaKain');
+        const inputNamaWarna = document.getElementById('namaWarna');
+        const inputLebar = document.getElementById('lebarKain');
+        const inputGramasi = document.getElementById('gramasiKain');
+        const inputStok = document.getElementById('stokKain');
+        const inputHarga = document.getElementById('hargaKain');
+        const inputCatatan = document.getElementById('catatanKain');
+        const estimasiNilaiForm = document.getElementById('estimasiNilaiForm');
+
+        // Filter / Cari / Urut DOM
+        const inputCari = document.getElementById('inputCari');
+        const filterJenis = document.getElementById('filterJenis');
+        const urutkan = document.getElementById('urutkan');
+
+        // Inisialisasi Aplikasi saat Load
+        window.onload = function() {
+            // Memuat dari LocalStorage atau default
+            const localData = localStorage.getItem('datakain_storage');
+            if (localData) {
+                dataKain = JSON.parse(localData);
+            } else {
+                dataKain = [...DATA_DEFAULT];
+                simpanKeStorage();
+            }
+
+            renderDaftarKain();
+            kalkulasiRingkasan();
+            lucide.createIcons();
+
+            // Setup Event Listeners
+            document.getElementById('btnTambah').addEventListener('click', bukaModalTambah);
+            document.getElementById('btnTutupModal').addEventListener('click', tutupModal);
+            document.getElementById('btnBatal').addEventListener('click', tutupModal);
+            formKain.addEventListener('submit', simpanForm);
+
+            // Perubahan Real-time Nilai Form
+            inputStok.addEventListener('input', updateEstimasiForm);
+            inputHarga.addEventListener('input', updateEstimasiForm);
+
+            // Filter & Urutkan
+            inputCari.addEventListener('input', renderDaftarKain);
+            filterJenis.addEventListener('change', renderDaftarKain);
+            urutkan.addEventListener('change', renderDaftarKain);
+
+            // Kamera Event Listeners
+            btnAmbilFoto.addEventListener('click', toggleKamera);
+            btnJepret.addEventListener('click', jepretKamera);
+            inputFotoFile.addEventListener('change', handleUploadFoto);
+        };
+
+        // Simpan data ke localStorage browser
+        function simpanKeStorage() {
+            localStorage.setItem('datakain_storage', JSON.stringify(dataKain));
+        }
+
+        // Tampilkan Toast Notifikasi
+        function tunjukkanToast(pesan, tipe = 'sukses') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = pesan;
+            
+            if (tipe === 'sukses') {
+                toastIcon.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>`;
+            } else {
+                toastIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i>`;
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- KAMERA & FOTO LOGIC ---
+        
+        // Membuka atau Menutup Akses Kamera
+        async function toggleKamera() {
+            if (localStream) {
+                hentikanKamera();
+            } else {
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: 'environment', // Mengutamakan kamera belakang pada ponsel
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    };
+                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    videoStream.srcObject = localStream;
+                    
+                    videoStream.classList.remove('hidden');
+                    placeholderFoto.classList.add('hidden');
+                    fotoPratinjau.classList.add('hidden');
+                    labelKameraAktif.classList.remove('hidden');
+
+                    btnJepret.classList.remove('hidden');
+                    textAmbilFoto.innerText = "Matikan Kamera";
+                } catch (error) {
+                    tunjukkanToast("Gagal mengakses kamera. Silakan pakai fitur unggah file.", "gagal");
+                    console.error("Error Akses Kamera: ", error);
+                }
+            }
+        }
+
+        // Matikan stream kamera
+        function hentikanKamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            videoStream.classList.add('hidden');
+            labelKameraAktif.classList.add('hidden');
+            btnJepret.classList.add('hidden');
+            textAmbilFoto.innerText = "Buka Kamera (Cekrek)";
+        }
+
+        // Ambil gambar dari video stream ke canvas
+        function jepretKamera() {
+            if (!localStream) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = videoStream.videoWidth;
+            canvas.height = videoStream.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Gambar frame video ke canvas
+            ctx.drawImage(videoStream, 0, 0, canvas.width, canvas.height);
+            
+            // Ambil data URL Base64
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            
+            // Tampilkan hasil di pratinjau
+            fotoPratinjau.src = dataUrl;
+            fotoPratinjau.classList.remove('hidden');
+            
+            // Matikan kamera langsung setelah menjepret
+            hentikanKamera();
+            tunjukkanToast("Foto berhasil diambil!");
+        }
+
+        // Menangani input file gambar tradisional
+        function handleUploadFoto(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fotoPratinjau.src = event.target.result;
+                    fotoPratinjau.classList.remove('hidden');
+                    placeholderFoto.classList.add('hidden');
+                    
+                    // Matikan kamera jika aktif saat memilih file
+                    hentikanKamera();
+                    tunjukkanToast("Foto berhasil dimuat.");
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- KALKULASI & STATISTIK ---
+
+        function formatRupiah(angka) {
+            if (!angka || isNaN(angka)) return "Rp 0";
+            return "Rp " + parseFloat(angka).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        }
+
+        function updateEstimasiForm() {
+            const stok = parseFloat(inputStok.value) || 0;
+            const harga = parseFloat(inputHarga.value) || 0;
+            const total = stok * harga;
+            estimasiNilaiForm.innerText = formatRupiah(total);
+        }
+
+        function kalkulasiRingkasan() {
+            let totalStok = 0;
+            let totalNilai = 0;
+
+            dataKain.forEach(kain => {
+                const stokVal = parseFloat(kain.stok) || 0;
+                const hargaVal = parseFloat(kain.harga) || 0;
+                totalStok += stokVal;
+                totalNilai += (stokVal * hargaVal);
+            });
+
+            document.getElementById('statTotalItem').innerText = dataKain.length;
+            document.getElementById('statTotalStok').innerText = totalStok.toFixed(2) + " m";
+            document.getElementById('statTotalNilai').innerText = formatRupiah(totalNilai);
+        }
+
+        // --- CRUD LOGIC ---
+
+        function bukaModalTambah() {
+            indexKainDiedit = -1;
+            inputEditIndex.value = "";
+            formKain.reset();
+            
+            // Set Default
+            inputWarna.value = "#4f46e5";
+            estimasiNilaiForm.innerText = "Rp 0";
+            document.getElementById('modalTitle').innerText = "Tambah Data Kain";
+            
+            // Foto reset
+            fotoPratinjau.src = "";
+            fotoPratinjau.classList.add('hidden');
+            placeholderFoto.classList.remove('hidden');
+            hentikanKamera();
+
+            modalForm.classList.remove('hidden');
+        }
+
+        function tutupModal() {
+            modalForm.classList.add('hidden');
+            hentikanKamera();
+        }
+
+        function editKain(index) {
+            indexKainDiedit = index;
+            const kain = dataKain[index];
+
+            inputEditIndex.value = index;
+            inputNama.value = kain.nama;
+            inputJenis.value = kain.jenis;
+            inputWarna.value = kain.warna;
+            inputNamaWarna.value = kain.namaWarna || "";
+            inputLebar.value = kain.lebar || "";
+            inputGramasi.value = kain.gramasi || "";
+            inputStok.value = kain.stok;
+            inputHarga.value = kain.harga || "";
+            inputCatatan.value = kain.catatan || "";
+
+            // Tampilkan foto jika ada
+            if (kain.foto) {
+                fotoPratinjau.src = kain.foto;
+                fotoPratinjau.classList.remove('hidden');
+                placeholderFoto.classList.add('hidden');
+            } else {
+                fotoPratinjau.src = "";
+                fotoPratinjau.classList.add('hidden');
+                placeholderFoto.classList.remove('hidden');
+            }
+
+            updateEstimasiForm();
+            document.getElementById('modalTitle').innerText = "Edit Data Kain";
+            modalForm.classList.remove('hidden');
+        }
+
+        function hapusKain(index) {
+            const konfirmasi = document.createElement('div');
+            konfirmasi.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4";
+            konfirmasi.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl text-center">
+                    <div class="text-amber-500 bg-amber-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">Hapus Data Kain?</h3>
+                    <p class="text-slate-500 text-sm mt-1">Tindakan ini tidak bisa dibatalkan. Menghapus kain <strong>"${dataKain[index].nama}"</strong>.</p>
+                    <div class="flex gap-3 mt-6 justify-center">
+                        <button id="batalHapus" class="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-semibold text-sm hover:bg-slate-50">Batal</button>
+                        <button id="konfirmHapus" class="px-4 py-2 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700">Ya, Hapus</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(konfirmasi);
+            lucide.createIcons();
+
+            document.getElementById('batalHapus').onclick = function() {
+                konfirmasi.remove();
+            };
+
+            document.getElementById('konfirmHapus').onclick = function() {
+                dataKain.splice(index, 1);
+                simpanKeStorage();
+                renderDaftarKain();
+                kalkulasiRingkasan();
+                konfirmasi.remove();
+                tunjukkanToast("Data kain berhasil dihapus.", "gagal");
+            };
+        }
+
+        function simpanForm(e) {
+            e.preventDefault();
+
+            const nama = inputNama.value.trim();
+            const jenis = inputJenis.value;
+            const warna = inputWarna.value;
+            const namaWarna = inputNamaWarna.value.trim() || "Warna Utama";
+            const lebar = inputLebar.value ? parseInt(inputLebar.value) : null;
+            const gramasi = inputGramasi.value ? parseInt(inputGramasi.value) : null;
+            const stok = parseFloat(inputStok.value) || 0;
+            const harga = inputHarga.value ? parseInt(inputHarga.value) : 0;
+            const catatan = inputCatatan.value.trim();
+            const foto = fotoPratinjau.src && !fotoPratinjau.src.endsWith('/') ? fotoPratinjau.src : "";
+
+            const kainBaru = {
+                nama, jenis, warna, namaWarna, lebar, gramasi, stok, harga, catatan, foto
+            };
+
+            if (indexKainDiedit > -1) {
+                // Update mode
+                dataKain[indexKainDiedit] = kainBaru;
+                tunjukkanToast("Data kain berhasil diperbarui.");
+            } else {
+                // Tambah baru mode
+                dataKain.push(kainBaru);
+                tunjukkanToast("Kain baru berhasil ditambahkan!");
+            }
+
+            simpanKeStorage();
+            renderDaftarKain();
+            kalkulasiRingkasan();
+            tutupModal();
+        }
+
+        // --- RENDER DAFTAR KAIN DENGAN FILTER & URUT ---
+
+        function renderDaftarKain() {
+            listKainEl.innerHTML = "";
+            
+            const kataKunci = inputCari.value.toLowerCase().trim();
+            const filterJns = filterJenis.value;
+            const urutan = urutkan.value;
+
+            // Memfilter Data
+            let hasilFilter = dataKain.filter(kain => {
+                const cocokKataKunci = kain.nama.toLowerCase().includes(kataKunci) || 
+                                       kain.jenis.toLowerCase().includes(kataKunci) || 
+                                       (kain.namaWarna && kain.namaWarna.toLowerCase().includes(kataKunci)) ||
+                                       (kain.catatan && kain.catatan.toLowerCase().includes(kataKunci));
+                
+                const cocokJenis = filterJns === "" || kain.jenis === filterJns;
+
+                return cocokKataKunci && cocokJenis;
+            });
+
+            // Mengurutkan Data
+            hasilFilter.sort((a, b) => {
+                if (urutan === 'stok-terbanyak') return b.stok - a.stok;
+                if (urutan === 'stok-tersedikit') return a.stok - b.stok;
+                if (urutan === 'nilai-tertinggi') return (b.stok * b.harga) - (a.stok * a.harga);
+                // default terbaru diinput (index terakhir pertama)
+                return 0; // Mempertahankan urutan push/input
+            });
+
+            if (urutan === 'terbaru') {
+                hasilFilter.reverse();
+            }
+
+            // Tampilkan / Sembunyikan state kosong
+            if (hasilFilter.length === 0) {
+                stateKosong.classList.remove('hidden');
+                stateKosong.classList.add('flex');
+                listKainEl.classList.add('hidden');
+            } else {
+                stateKosong.classList.add('hidden');
+                stateKosong.classList.remove('flex');
+                listKainEl.classList.remove('hidden');
+            }
+
+            // Render Item Kartu Kain
+            hasilFilter.forEach((kain, filteredIndex) => {
+                // Cari index asli dari array dataKain asal
+                const indexAsli = dataKain.indexOf(kain);
+                const totalNilaiKain = kain.stok * kain.harga;
+
+                // Mempersiapkan Tampilan Foto atau SVG Berwarna default
+                let visualFotoKain = '';
+                if (kain.foto) {
+                    visualFotoKain = `<img src="${kain.foto}" class="w-full h-full object-cover" alt="${kain.nama}">`;
+                } else {
+                    // Jika tidak ada foto, tampilkan latar warna estetik dengan tekstur kain
+                    visualFotoKain = `
+                        <div class="w-full h-full flex flex-col items-center justify-center text-white p-4" style="background: linear-gradient(135deg, ${kain.warna}ee, ${kain.warna});">
+                            <i data-lucide="palette" class="w-8 h-8 mb-1 drop-shadow-md"></i>
+                            <span class="text-xs font-bold drop-shadow-sm uppercase tracking-wide">${kain.namaWarna || 'Solid'}</span>
+                        </div>
+                    `;
+                }
+
+                const kartu = document.createElement('div');
+                kartu.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition duration-300 flex flex-col justify-between";
+                kartu.innerHTML = `
+                    <div>
+                        <!-- Foto & Badge Atas -->
+                        <div class="relative h-44 bg-slate-100 overflow-hidden">
+                            ${visualFotoKain}
+                            
+                            <!-- Badge Jenis -->
+                            <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                ${kain.jenis}
+                            </span>
+
+                            <!-- Pembuat Warna Visual di Pojok -->
+                            <span class="absolute top-3 right-3 w-6 h-6 rounded-full border-2 border-white shadow-md cursor-help" style="background-color: ${kain.warna}" title="Kode Warna: ${kain.warna}"></span>
+                        </div>
+
+                        <!-- Detail Kain -->
+                        <div class="p-5">
+                            <h3 class="font-bold text-slate-800 text-lg leading-tight line-clamp-1 mb-1">${kain.nama}</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
+                                <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+                                <span>Warna: <strong>${kain.namaWarna || 'Tidak diberi nama'}</strong></span>
+                            </div>
+
+                            <!-- Spesifikasi Teknis Grid -->
+                            <div class="grid grid-cols-2 gap-y-2 gap-x-4 border-b border-slate-100 pb-4 mb-4 text-xs">
+                                <div class="flex items-center gap-1.5 text-slate-600">
+                                    <i data-lucide="expand" class="w-4 h-4 text-slate-400"></i>
+                                    <span>Lebar: <strong>${kain.lebar ? kain.lebar + ' cm' : '-'}</strong></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-slate-600">
+                                    <i data-lucide="weight" class="w-4 h-4 text-slate-400"></i>
+                                    <span>Gramasi: <strong>${kain.gramasi ? kain.gramasi + ' GSM' : '-'}</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Catatan Singkat -->
+                            ${kain.catatan ? `
+                            <p class="text-xs text-slate-500 italic line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-4">
+                                "${kain.catatan}"
+                            </p>
+                            ` : ''}
+
+                            <!-- Kalkulasi Area -->
+                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50 space-y-1.5">
+                                <div class="flex justify-between items-center text-xs text-slate-600">
+                                    <span>Stok Kain:</span>
+                                    <span class="font-bold text-slate-800">${kain.stok.toFixed(2)} Meter</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs text-slate-600">
+                                    <span>Harga / Meter:</span>
+                                    <span class="font-medium text-slate-800">${formatRupiah(kain.harga)}</span>
+                                </div>
+                                <div class="flex justify-between items-center border-t border-indigo-100/60 pt-1.5 mt-1.5">
+                                    <span class="text-xs font-bold text-slate-700">Total Nilai Stok:</span>
+                                    <span class="text-sm font-black text-indigo-600">${formatRupiah(totalNilaiKain)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi -->
+                    <div class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex gap-2 justify-end">
+                        <button onclick="editKain(${indexAsli})" class="text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-white border border-transparent hover:border-slate-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            Edit
+                        </button>
+                        <button onclick="hapusKain(${indexAsli})" class="text-xs font-semibold text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            Hapus
+                        </button>
+                    </div>
+                `;
+
+                listKainEl.appendChild(kartu);
+            });
+
+            // Re-inisialisasi icon Lucide yang baru dimuat
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
