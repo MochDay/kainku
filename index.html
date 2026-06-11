@@ -64,6 +64,34 @@
             </div>
         </section>
 
+        <!-- Panel Pusat Cadangan Data -->
+        <section class="bg-indigo-50/50 border border-indigo-100/80 p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-100 text-indigo-700 rounded-xl">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                </div>
+                <div class="text-left">
+                    <h4 class="text-sm font-bold text-slate-800">Pusat Cadangan & Ekspor Data</h4>
+                    <p class="text-xs text-slate-500">Amankan data kain Anda ke perangkat atau pulihkan dari file cadangan eksternal Anda.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                <button onclick="eksporJSON()" class="flex-1 md:flex-none bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    Ekspor Cadangan (JSON)
+                </button>
+                <button onclick="eksporExcel()" class="flex-1 md:flex-none bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                    Laporan Excel (CSV)
+                </button>
+                <label class="flex-1 md:flex-none bg-indigo-600 text-white hover:bg-indigo-700 font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm text-center">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                    Impor Cadangan
+                    <input type="file" id="inputImporFile" accept=".json" class="hidden" onchange="imporJSON(event)">
+                </label>
+            </div>
+        </section>
+
         <!-- Filter & Search Bar -->
         <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="relative w-full md:w-96">
@@ -678,10 +706,11 @@
             }
 
             // Render Item Kartu Kain
-            hasilFilter.forEach((kain, filteredIndex) => {
-                // Cari index asli dari array dataKain asal
-                const indexAsli = dataKain.indexOf(kain);
-                const totalNilaiKain = kain.stok * kain.harga;
+        filteredIndex = 0; // Membantu index visual
+        hasilFilter.forEach((kain, filteredIndex) => {
+            // Cari index asli dari array dataKain asal
+            const indexAsli = dataKain.indexOf(kain);
+            const totalNilaiKain = kain.stok * kain.harga;
 
                 // Mempersiapkan Tampilan Foto atau SVG Berwarna default
                 let visualFotoKain = '';
@@ -777,6 +806,169 @@
 
             // Re-inisialisasi icon Lucide yang baru dimuat
             lucide.createIcons();
+        }
+
+        // --- FITUR CADANGAN DATA (EKSPOR/IMPOR) ---
+
+        // 1. Ekspor Data Kain ke File Cadangan JSON (Termasuk Foto Base64)
+        function eksporJSON() {
+            if (dataKain.length === 0) {
+                tunjukkanToast("Tidak ada data kain yang bisa diekspor.", "gagal");
+                return;
+            }
+            try {
+                const dataStr = JSON.stringify(dataKain, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const tanggal = new Date().toISOString().split('T')[0];
+                
+                a.href = url;
+                a.download = `Backup_KainKu_${tanggal}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                tunjukkanToast("File cadangan JSON berhasil diunduh!");
+            } catch (error) {
+                tunjukkanToast("Gagal melakukan ekspor data.", "gagal");
+                console.error(error);
+            }
+        }
+
+        // 2. Ekspor Data Kain ke Format Excel yang Kompatibel (CSV dengan Semicolon separator)
+        function eksporExcel() {
+            if (dataKain.length === 0) {
+                tunjukkanToast("Tidak ada data kain untuk dibuatkan laporan.", "gagal");
+                return;
+            }
+            try {
+                // Header Kolom untuk Microsoft Excel
+                const headers = ["Nama Kain", "Jenis Kain", "Kode Warna", "Nama Warna", "Lebar (cm)", "Gramasi (GSM)", "Jumlah Stok (Meter)", "Harga per Meter (Rp)", "Total Estimasi Nilai (Rp)", "Catatan"];
+                
+                // Format baris isi data
+                const rows = dataKain.map(kain => [
+                    `"${kain.nama.replace(/"/g, '""')}"`,
+                    `"${kain.jenis.replace(/"/g, '""')}"`,
+                    `"${kain.warna}"`,
+                    `"${(kain.namaWarna || '').replace(/"/g, '""')}"`,
+                    kain.lebar || "-",
+                    kain.gramasi || "-",
+                    kain.stok,
+                    kain.harga || 0,
+                    kain.stok * (kain.harga || 0),
+                    `"${(kain.catatan || '').replace(/"/g, '""')}"`
+                ]);
+
+                // Menggunakan tanda semicolon (;) dan Byte Order Mark (BOM) agar simbol Rupiah/Karakter terbaca rapi di Excel Indonesia
+                const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(row => row.join(";"))].join("\n");
+                
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const tanggal = new Date().toISOString().split('T')[0];
+                
+                a.href = url;
+                a.download = `Laporan_Stok_KainKu_${tanggal}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                tunjukkanToast("Laporan stok format Excel berhasil diunduh!");
+            } catch (error) {
+                tunjukkanToast("Gagal mengunduh laporan Excel.", "gagal");
+                console.error(error);
+            }
+        }
+
+        // 3. Membaca & Memvalidasi File Cadangan JSON yang Diunggah
+        function imporJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const parsedData = JSON.parse(event.target.result);
+                    
+                    // Validasi Dasar apakah format data berupa Array objek
+                    if (!Array.isArray(parsedData)) {
+                        throw new Error("File cadangan tidak valid (harus berupa daftar/array).");
+                    }
+
+                    // Validasi apakah setiap elemen adalah objek kain yang valid
+                    const dataValid = parsedData.every(item => item.nama && item.jenis && item.stok !== undefined);
+                    if (!dataValid) {
+                        throw new Error("Struktur isi data tidak cocok dengan spesifikasi aplikasi KainKu.");
+                    }
+
+                    // Tampilkan kotak keputusan kustom (Gabungkan atau Timpa)
+                    bukaModalImporKonfirmasi(parsedData);
+
+                } catch (error) {
+                    tunjukkanToast("Gagal memuat file cadangan: " + error.message, "gagal");
+                }
+                // Reset file input agar bisa mendeteksi jika mengunggah file yang sama
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // 4. Modal Konfirmasi Impor Interaktif Tanpa Alert/Confirm Sistem
+        function bukaModalImporKonfirmasi(dataBaru) {
+            const modalKonfirm = document.createElement('div');
+            modalKonfirm.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in";
+            modalKonfirm.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl text-center border border-slate-100">
+                    <div class="text-indigo-600 bg-indigo-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">Impor Cadangan Berhasil</h3>
+                    <p class="text-slate-500 text-sm mt-2">Ditemukan <strong>${dataBaru.length} item kain</strong> di dalam file cadangan. Pilih metode penyimpanan data Anda:</p>
+                    
+                    <div class="flex flex-col gap-2 mt-6">
+                        <button id="btnGabung" class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-xs hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                            <i data-lucide="merge" class="w-4 h-4"></i>
+                            Gabungkan (Tambah ke Data Sekarang)
+                        </button>
+                        <button id="btnTimpa" class="w-full px-4 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl font-semibold text-xs hover:bg-rose-100 transition flex items-center justify-center gap-2">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            Timpa (Hapus Semua & Ganti Baru)
+                        </button>
+                        <button id="btnBatalImpor" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-semibold text-xs hover:bg-slate-50 transition">
+                            Batalkan Impor
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalKonfirm);
+            lucide.createIcons();
+
+            document.getElementById('btnBatalImpor').onclick = function() {
+                modalKonfirm.remove();
+            };
+
+            // Opsi Menggabungkan Data
+            document.getElementById('btnGabung').onclick = function() {
+                dataKain = [...dataKain, ...dataBaru];
+                simpanKeStorage();
+                renderDaftarKain();
+                kalkulasiRingkasan();
+                modalKonfirm.remove();
+                tunjukkanToast(`Berhasil menggabungkan ${dataBaru.length} data kain baru!`);
+            };
+
+            // Opsi Menghapus & Menimpa Data Lama
+            document.getElementById('btnTimpa').onclick = function() {
+                dataKain = [...dataBaru];
+                simpanKeStorage();
+                renderDaftarKain();
+                kalkulasiRingkasan();
+                modalKonfirm.remove();
+                tunjukkanToast(`Data lama dihapus. Berhasil memulihkan ${dataBaru.length} kain.`);
+            };
         }
     </script>
 </body>
